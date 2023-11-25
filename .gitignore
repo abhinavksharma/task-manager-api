@@ -1,0 +1,59 @@
+# Node.js
+node_modules/
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+lib/
+bin/
+dist/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+yarn-error.log
+.pnp.*
+.yarn/
+
+# Parcel
+.cache/
+dist/
+
+# dotenv environment variables file
+.env
+
+# vscode settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Files created by Visual Studio
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw??
