@@ -15,148 +15,81 @@ app.get("/taskmanager/v1/", (req, res) => {
 });
 
 //GET /tasks: Retrieve all tasks.
-app.get("/taskmanager/v1/tasks", (req, res) => {
-  tasks.gettasks( (readError, jsonData) => {
-    if (readError) {
-      console.error("Error reading JSON file:", readError.message);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-    return res.status(200).json(jsonData);
-  });
+app.get("/taskmanager/v1/tasks", async (req, res) => {
+  try {
+    const tasksres = await tasks.getTasks();
+    return res.status(200).json(tasksres);
+  } catch {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 //GET /tasks/:id: Retrieve a single task by its ID
-app.get("/taskmanager/v1/tasks/:taskId", (req, res) => {
-  tasks.getTaskById(parseInt(req.params.taskId), (readError, jsonData) => {
-    if (readError) {
-      console.error("Error reading JSON file:", readError.message);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-    if(jsonData){
-      return res.status(200).json(jsonData);
-    }
-    return res.status(404).json({message:`task not found with id ${parseInt(req.params.taskId)}`});
-  });
+app.get("/taskmanager/v1/tasks/:taskId", async (req, res) => {
+  try {
+    const taskfilter = await tasks.getTaskByID(parseInt(req.params.taskId));
+    return res.status(200).json(taskfilter);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
-//POST /tasks: Create a new task
-app.post("/taskmanager/v1/tasks", (req, res) => {
-  const { id, title, description, completed, priority } = req.body;
-
-  // Validate that 'id' and 'priority' are provided
-  if (!id || !description || !priority || !title) {
-    return res.status(400).json({ error: "Please provide required fields" });
+// //POST /tasks: Create a new task
+app.post("/taskmanager/v1/tasks", async (req, res) => {
+  try {
+    const newtask = req.body;
+    await tasks.createTask(newtask);
+    return res
+      .status(201)
+      .json({ message: "task created successfully", task: newtask });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
+});
 
-  // Check if the task with the specified ID already exists
-
-  tasks.isTaskExsists(parseInt(id),(exsistError,found)=>{
-    if(exsistError){
-      console.error("Error reading JSON file:", exsistError.message);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-    console.log(found);
-    if(found=== true){
-      return res.status(400).json({ error: "Task with the same id already exists" });
-    }
-    if(found === false){
-      const newTask = { id, title, description, completed, priority };
-      tasks.createTasks(newTask,(ioError,success)=>{
-        if(ioError){
-          console.error("Error IO JSON file:", readError.message);
-          return res.status(500).json({ error: "Internal Server Error" });
-        }
-        if(success){
-          return res.status(201).json({
-            message:"!!!!successfully created!!!!",
-            task: newTask
-          });
-        }
-    
+// //PUT /tasks/:id: Update an existing task by its ID
+app.put("/taskmanager/v1/tasks/:taskID", async (req, res) => {
+  try {
+    const taskbody = req.body;
+    await tasks.updateTask(parseInt(req.params.taskID), taskbody);
+    const updatedtask = await tasks.getTaskByID(parseInt(req.params.taskID));
+    return res
+      .status(201)
+      .json({
+        message: `task with id ${req.params.taskID} is updated`,
+        task: updatedtask,
       });
-    }
-
-
-  });
-
-  
-
-  // Create the new task
-  //const newTask = { id, title, description, completed, priority };
-
-  // Add the new task to the tasks array
-  // tasks.createTasks(newTask,(ioError,success)=>{
-  //   if(ioError){
-  //     console.error("Error IO JSON file:", readError.message);
-  //     return res.status(500).json({ error: "Internal Server Error" });
-  //   }
-  //   if(success){
-  //     return res.status(201).json({
-  //       message:"!!!!successfully created!!!!",
-  //       task: newTask
-  //     });
-  //   }
-
-  // });
-
-  // Respond with the newly created task
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
 });
 
-//PUT /tasks/:id: Update an existing task by its ID
-app.put("/taskmanager/v1/tasks/:taskID", (req, res) => {
-  let taskid = parseInt(req.params.taskID);
-  const tasktoudpate = tasks.getTaskById(taskid);
-  if (!tasktoudpate) {
-    return res.status(404).json({
-      message: `task is not found with id ${taskid}`,
-    });
+app.delete("/taskmanager/v1/tasks/:taskId", async (req, res) => {
+  try {
+    await tasks.deleteTask(parseInt(req.params.taskId));
+    res
+      .status(200)
+      .json({
+        message: `task with ID ${req.params.taskId} is deleted Successfully`
+      });
+  } catch (error) {
+    res.status(500).json({ messgae: error.message });
   }
-  const { title, description, priority, completed } = req.body;
-  if (priority !== undefined) {
-    tasktoudpate.priority = priority;
-  }
-  if (title !== undefined) {
-    tasktoudpate.title = title;
-  }
-
-  if (description !== undefined) {
-    tasktoudpate.description = description;
-  }
-
-  if (completed !== undefined) {
-    // Validate that completed is a boolean value
-
-    if (!helpers.isValidBoolean(completed)) {
-      return res
-        .status(400)
-        .json({ error: "Completed must be a boolean value" });
-    }
-    tasktoudpate.completed = completed;
-  }
-  return res.status(201).json({
-    message: `task with id ${tasktoudpate.id} is updated`,
-    task: tasktoudpate,
-  });
-});
-
-app.delete("/taskmanager/v1/tasks/:taskId", (req, res) => {
-  const taskID = parseInt(req.params.taskId);
-  let tasksdata = tasks.getTaskById(parseInt(req.params.taskId));
 });
 
 app.all("*", (req, res) => {
   return res.status(404).json({
     status: 404,
-    message: `requested endpoint ${req.url} does not exsist`,
+    message: `requested endpoint ${req.url} does not exsist`
   });
 });
 
-//////// optional parts/////////
+// //////// optional parts/////////
 
-//GET /tasks handling path queries like sortby, orderby, filterby, filter,
+// //GET /tasks handling path queries like sortby, orderby, filterby, filter,
 
-//Implement an endpoint to retrieve tasks based on priority level: GET /tasks/priority/:level.
-//app.get("/taskmanager/v1/tasks/priority/:level", (req, res) => {});
+// //Implement an endpoint to retrieve tasks based on priority level: GET /tasks/priority/:level.
+// //app.get("/taskmanager/v1/tasks/priority/:level", (req, res) => {});
 
 //listener
 app.listen(port, (err) => {

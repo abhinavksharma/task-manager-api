@@ -2,11 +2,17 @@
   "tasks": [
     {
       "id": 1,
-      "title": "sample title",
+      "title": "sample something",
       "description": "sample description",
       "completed": true,
-      "priority": "high"
+      "priority": "High"
+    },
+    {
+      "id": 3,
+      "title": "sample3 title",
+      "description": "sample description",
+      "completed": true,
+      "priority": "High"
     }
-    
   ]
 }

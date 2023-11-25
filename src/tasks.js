@@ -1,107 +1,119 @@
-const filehandler = require('./helpers/filehandler');
-const FILEPATH = './static/data.json';
-const fs = require('fs');
+const filehandler = require("./helpers/filehandler");
+const FILEPATH = "./static/data.json";
+const fs = require("fs");
 
 
-let tasksdata = {
-   tasks: [
-        {
-            id:1,
-            title:"sample title",
-            description :"sample description",
-            completed : true,
-            priority:"high"
-        },
-        {
-            id:2,
-            title:"sample title2",
-            description :"sample description2",
-            completed : false,
-            priority:"Medium"
-        },
-    ]
-};
-
-
-function gettasks(callback){
-
-    filehandler.readJsonFile(FILEPATH,(readError,jsonData)=>{
-        if(readError){
-            callback(readError,null);
-            return;
-        }
-        
-        callback(null,jsonData);
-        
-
-    });
-}
-
-function getTaskById(taskId,callback) {
-
-    filehandler.readJsonFile(FILEPATH,(readError,jsonData)=>{
-        if(readError){
-            callback(readError,null);
-            return;
-        }
-        const task = jsonData.tasks.find(task =>task.id === taskId);
-        if(task){
-            callback(null,task);
-        }
-        else{
-            callback(null,null);
-        }
-
-    });
+// async await
+async function getTasks() {
+  try {
+    const tasks = await filehandler.readJsonFile(FILEPATH);
+    return tasks;
+  } catch (error) {
+    throw new Error(`error getting this task: ${error.message}`);
   }
-
-function createTasks(task,callback){
-
-    filehandler.readJsonFile(FILEPATH,(readError,jsonData)=>{
-        if(readError){
-            callback(readError,null);
-            return;
-        }
-        jsonData.tasks.push(task);
-        filehandler.writeJsonFile(FILEPATH,jsonData,(writeError,success)=>{
-            if(writeError){
-                callback(writeError,null);
-                return;
-            }
-            callback(null,success);
-
-        });
-
-    });
-    // tasksdata.tasks.push(task);
-    // return true;
 }
 
-function poptaskbyid(taskid){
-    let tasksindex = tasksdata.tasks.findIndex(task => task.id === taskid);
-    if(tasksindex === -1){
-        return false;
+async function getTaskByID(taskID) {
+  try {
+    const tasks = await filehandler.readJsonFile(FILEPATH);
+    const task = tasks.tasks.find((task) => task.id === taskID);
+
+    if (!task) {
+      throw new Error(`Task with ID ${taskID} does not exsist`);
     }
-    tasksdata = tasksdata.tasks.filter(task => task.id !== tasksindex);
-    return true;
-
+    return task;
+  } catch (error) {
+    throw new Error(`error getting this task: ${error.message}`);
+  }
 }
 
-
-function isTaskExsists(taskId,callback){
-    gettasks((readError,jsonData)=>{
-        if(readError){
-            callback(readError,null);
-        }
-        const task = jsonData.tasks.find(task =>task.id === taskId)
-        if(task){
-            callback(null,true);
-        }
-        callback(null,false);
-
-    });
+async function createTask(task) {
+  try {
+    if (!task.id) {
+      throw new Error(`task id can not be empty`);
+    }
+    const tasks = await getTasks();
+    const existingtask = tasks.tasks.find((t) => t.id === task.id);
+    if (existingtask) {
+      throw new Error(`task id ${task.id} already in use cannot be recreated`);
+    }
+    if (!task.description) {
+      throw new Error(`task description can not be empty`);
+    }
+    if (!task.priority) {
+      throw new Error(`task priority can not be empty`);
+    }
+    if (!task.title) {
+      throw new Error(`task title can not be empty`);
+    }
+    if (!task.completed) {
+      task.completed = false;
+    }
+    tasks.tasks.push(task);
+    const fileupdate = await filehandler.writeJsonFile(FILEPATH, tasks);
+  } catch (error) {
+    throw new Error(`message : ${error.message}`);
+  }
 }
 
+async function updateTask(taskID, taskbody) {
+  try {
+    if (!taskID) {
+      throw new Error(`task id can not be empty`);
+    }
+
+    const tasks = await getTasks();
+    const existingtaskindex = tasks.tasks.findIndex((t) => t.id === taskID);
+    console.log(existingtaskindex);
+    if (existingtaskindex === -1) {
+      throw new Error(`task with id ${taskID} is not present in the file`);
+    }
+    if (taskbody.description) {
+      tasks.tasks[existingtaskindex].description = taskbody.description;
+    }
+    if (taskbody.priority) {
+      tasks.tasks[existingtaskindex].priority = taskbody.priority;
+    }
+    if (taskbody.title) {
+      tasks.tasks[existingtaskindex].title = taskbody.title;
+    }
+    if (taskbody.completed) {
+      if (typeof (taskbody.completed != Boolean)) {
+        throw new Error(`task completed can only be true/false`);
+      }
+      tasks.tasks[existingtaskindex].title = taskbody.title;
+    }
+    await filehandler.writeJsonFile(FILEPATH, tasks);
+  } catch (error) {
+    throw new Error(`Internal server error: ${error.message}`);
+  }
+}
+
+async function deleteTask(taskID) {
+  try {
+    if (!taskID) {
+        throw new Error(`task id can not be empty`);
+      }
+      const tasks = await getTasks();
+      const existingtaskindex = tasks.tasks.findIndex((t) => t.id === taskID);
+      if (existingtaskindex === -1) {
+        throw new Error(`task with id ${taskID} is not present in the file`);
+      }
+      const tasksafdeleted = tasks.tasks.splice(existingtaskindex,1)[0];
+
+      await filehandler.writeJsonFile(FILEPATH,tasks);
+
+  } catch (error) {
+    throw new Error(`Internal Server Error : ${error.message}`);
+  }
+}
+///////////////////////////////////
 
 
-module.exports={gettasks,getTaskById,createTasks,poptaskbyid,isTaskExsists};
+module.exports = {
+  getTasks,
+  getTaskByID,
+  createTask,
+  updateTask,
+  deleteTask
+};
