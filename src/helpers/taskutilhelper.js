@@ -1,4 +1,4 @@
-const filehandler = require("./helpers/filehandler");
+const filehandler = require("./filehandler");
 const FILEPATH = "./static/data.json";
 const fs = require("fs");
 
